@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 Browser-Use is an async python >= 3.11 library that implements AI browser driver abilities using LLMs + playwright.
 We want our library APIs to be ergonomic, intuitive, and hard to get wrong.
 
@@ -14,6 +18,11 @@ We want our library APIs to be ergonomic, intuitive, and hard to get wrong.
 - Prefer `from uuid_extensions import uuid7str` +  `id: str = Field(default_factory=uuid7str)` for all new id fields
 - Run tests using `uv run pytest -vxs tests/ci`
 - Run the type checker using `uv run pyright`
+- Run a single test: `uv run pytest -vxs tests/ci/test_file.py::test_name`
+- Format/lint code: Uses `ruff` (automatically run by pre-commit hooks)
+- Install playwright browsers: `playwright install chromium --with-deps --no-shell`
+- CLI usage: `browser-use` or `browseruse` (requires `pip install "browser-use[cli]"`)
+- Start MCP server: `uvx browser-use --mcp`
 
 ## Keep Examples & Tests Up-To-Date
 
@@ -57,3 +66,47 @@ When doing any truly massive refactors, trend towards using simple event buses a
 
 If you struggle to update or edit files in-place, try shortening your match string to 1 or 2 lines instead of 3.
 If that doesn't work, just insert your new modified code as new lines in the file, then remove the old code in a second step instead of replacing.
+
+## Architecture Overview
+
+The library follows a service-oriented architecture with clear separation:
+
+- **agent/**: Core agent orchestration (Agent class in service.py)
+- **browser/**: Browser abstraction (BrowserSession, profiles)
+- **controller/**: Action registration and execution with decorator-based registry
+- **dom/**: DOM parsing, element extraction, and history tracking
+- **llm/**: LLM provider integrations via BaseChatModel protocol
+- **mcp/**: Model Context Protocol server/client support
+- **filesystem/**: Virtual filesystem for agent file operations
+- **telemetry/**: Anonymous usage tracking (opt-out with ANONYMIZED_TELEMETRY=false)
+
+Key patterns:
+- Lazy imports in `__init__.py` files for performance
+- EventBus (`bubus`) for loose coupling between components
+- Browser health checks with `@require_healthy_browser` decorator
+- Singleton services (e.g., telemetry) via `@singleton`
+- Protocol-based interfaces for extensibility
+
+## Critical Implementation Details
+
+- **Browser Management**: Uses Playwright and Patchright (stealth fork). Extensive crash recovery logic.
+- **DOM Processing**: Custom JS injection for element extraction. Handles cross-origin iframes.
+- **Testing**: ALWAYS use `pytest-httpserver` for test servers, never real URLs. No mocks except for LLM.
+- **Security**: URL validation against `allowed_domains`, sensitive data redaction in logs.
+- **Configuration**: Multi-level config system (env vars → config files → defaults). XDG standards.
+- **Debug**: Set `BROWSER_USE_LOGGING_LEVEL=debug` for verbose logs. Profiles in `~/.config/browseruse/profiles/`
+
+## Adding New Actions
+
+Register actions via the controller decorator:
+
+```python
+from browser_use.controller.registry.service import Registry
+
+registry = Registry()
+
+@registry.action("Description of what the action does")
+async def my_action(param: str, page: Page) -> ActionResult:
+    # Implementation
+    return ActionResult(extracted_content=result)
+```

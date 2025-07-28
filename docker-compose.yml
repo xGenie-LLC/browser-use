@@ -1,0 +1,27 @@
+services:
+  browser-use:
+    build: .
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - BROWSER_USE_LOGGING_LEVEL=info
+      - ANONYMIZED_TELEMETRY=false
+      - PLAYWRIGHT_BROWSERS_PATH=/home/browseruse/pw-browsers
+      - BROWSER_USE_HEADLESS=false
+      - DISPLAY=:1
+    volumes:
+      - ./examples:/app/examples
+      - ./output:/data
+    tmpfs:
+      - /tmp/browser_use_semaphores:mode=1777,size=100M
+    ports:
+      - "5900:5900"  # VNC 端口
+      - "6080:6080"  # noVNC Web 端口
+    shm_size: '256m'  # 增加共享内存以防止浏览器崩溃
+    user: root
+    entrypoint: []
+    command: [
+      "/bin/bash", "-c",
+      "apt-get update && apt-get install -y xvfb x11vnc novnc websockify && mkdir -p /home/browseruse/pw-browsers /tmp/browser_use_semaphores && chmod 1777 /tmp/browser_use_semaphores && PLAYWRIGHT_BROWSERS_PATH=/home/browseruse/pw-browsers playwright install chromium && chown -R browseruse:browseruse /home/browseruse/pw-browsers && Xvfb :1 -screen 0 1280x1024x24 & x11vnc -display :1 -forever -nopw -rfbport 5900 & websockify --web=/usr/share/novnc/ 6080 localhost:5900 & sleep 5 && echo 'VNC ready at http://localhost:6081/vnc.html' && su - browseruse -c 'cd /app && DISPLAY=:1 PLAYWRIGHT_BROWSERS_PATH=/home/browseruse/pw-browsers BROWSER_USE_HEADLESS=false OPENAI_API_KEY=$OPENAI_API_KEY /app/.venv/bin/python examples/simple.py' ; tail -f /dev/null"
+    ]
+    stdin_open: true
+    tty: true
