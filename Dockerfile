@@ -225,9 +225,9 @@ EXPOSE 9222
 
 
 # 暴露端口
-EXPOSE 5900 6080  # VNC 端口
-EXPOSE 8501       # Streamlit UI 端口
-# EXPOSE 7860     # Gradio UI 端口（如果使用 gradio）
+EXPOSE 5900 6080
+EXPOSE 8501
+# EXPOSE 7860
 
 # 安装 gosu 用于更好的用户切换
 USER root
