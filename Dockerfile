@@ -126,6 +126,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-$TARGETARCH$T
         # dumb-init gosu cron zlib1g-dev \
         # 3. frivolous CLI helpers to make debugging failed archiving easierL
         nano iputils-ping dnsutils jq \
+        # 4. VNC components (for optional UI viewing)
+        xvfb x11vnc novnc websockify \
         # tree yq procps \
         # 4. browser dependencies: (auto-installed by playwright install --with-deps chromium)
      #    libnss3 libxss1 libasound2 libx11-xcb1 \
@@ -221,10 +223,6 @@ EXPOSE 9222
 # HEALTHCHECK --interval=30s --timeout=20s --retries=15 \
 #     CMD curl --silent 'http://localhost:8000/health/' | grep -q 'OK'
 
-# 安装 VNC 组件（总是安装，运行时决定是否启用）
-RUN apt-get update -qq && \
-    apt-get install -y -qq xvfb x11vnc novnc websockify && \
-    rm -rf /var/lib/apt/lists/*
 
 # 暴露 VNC 端口
 EXPOSE 5900 6080
@@ -240,5 +238,8 @@ if [ "${ENABLE_VNC}" = "true" ]; then\n\
     export BROWSER_USE_HEADLESS=false\n\
 fi\n\
 exec "$@"' > /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
+
+# 保持 root 用户以便启动 VNC 服务
+# USER "$BROWSERUSE_USER"
 
 ENTRYPOINT ["/docker-entrypoint.sh", "browser-use"]
