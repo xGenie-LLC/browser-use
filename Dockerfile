@@ -249,5 +249,10 @@ RUN echo '#!/bin/bash' > /entrypoint.sh && \
 
 ENTRYPOINT ["/entrypoint.sh"]
 
+# 安装 streamlit 并启动 Web UI
+RUN --mount=type=cache,target=/root/.cache,sharing=locked,id=cache-$TARGETARCH \
+    --mount=from=ghcr.io/astral-sh/uv:latest,source=/uv,target=/bin/uv \
+    uv pip install streamlit
+
 # 默认启动 Streamlit Web UI
 CMD ["python", "-m", "streamlit", "run", "/app/examples/ui/streamlit_demo.py", "--server.port=8501", "--server.address=0.0.0.0"]
