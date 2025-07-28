@@ -258,5 +258,12 @@ RUN --mount=type=cache,target=/root/.cache,sharing=locked,id=cache-$TARGETARCH \
 ENV STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
 ENV STREAMLIT_THEME_BASE="dark"
 
+# 设置 Playwright 浏览器路径
+ENV PLAYWRIGHT_BROWSERS_PATH=/home/browseruse/.cache/ms-playwright
+
+# 复制 playwright 浏览器到用户目录
+RUN cp -r /root/.cache/ms-playwright /home/browseruse/.cache/ && \
+    chown -R browseruse:browseruse /home/browseruse/.cache
+
 # 默认启动 Streamlit Web UI
 CMD ["python", "-m", "streamlit", "run", "/app/examples/ui/streamlit_demo.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.headless=true"]
