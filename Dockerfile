@@ -221,12 +221,10 @@ EXPOSE 9222
 # HEALTHCHECK --interval=30s --timeout=20s --retries=15 \
 #     CMD curl --silent 'http://localhost:8000/health/' | grep -q 'OK'
 
-# 安装 VNC 组件（可选）
-RUN if [ "${ENABLE_VNC}" = "true" ]; then \
-        apt-get update -qq && \
-        apt-get install -y -qq xvfb x11vnc novnc websockify && \
-        rm -rf /var/lib/apt/lists/*; \
-    fi
+# 安装 VNC 组件（总是安装，运行时决定是否启用）
+RUN apt-get update -qq && \
+    apt-get install -y -qq xvfb x11vnc novnc websockify && \
+    rm -rf /var/lib/apt/lists/*
 
 # 暴露 VNC 端口
 EXPOSE 5900 6080
