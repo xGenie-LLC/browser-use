@@ -221,4 +221,26 @@ EXPOSE 9222
 # HEALTHCHECK --interval=30s --timeout=20s --retries=15 \
 #     CMD curl --silent 'http://localhost:8000/health/' | grep -q 'OK'
 
-ENTRYPOINT ["browser-use"]
+# 安装 VNC 组件（可选）
+RUN if [ "${ENABLE_VNC}" = "true" ]; then \
+        apt-get update -qq && \
+        apt-get install -y -qq xvfb x11vnc novnc websockify && \
+        rm -rf /var/lib/apt/lists/*; \
+    fi
+
+# 暴露 VNC 端口
+EXPOSE 5900 6080
+
+# 创建启动脚本
+RUN echo '#!/bin/bash\n\
+if [ "${ENABLE_VNC}" = "true" ]; then\n\
+    Xvfb :1 -screen 0 1280x1024x24 &\n\
+    x11vnc -display :1 -forever -nopw -rfbport 5900 &\n\
+    websockify --web=/usr/share/novnc/ 6080 localhost:5900 &\n\
+    sleep 3\n\
+    export DISPLAY=:1\n\
+    export BROWSER_USE_HEADLESS=false\n\
+fi\n\
+exec "$@"' > /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
+
+ENTRYPOINT ["/docker-entrypoint.sh", "browser-use"]
