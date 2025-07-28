@@ -224,8 +224,10 @@ EXPOSE 9222
 #     CMD curl --silent 'http://localhost:8000/health/' | grep -q 'OK'
 
 
-# 暴露 VNC 端口
-EXPOSE 5900 6080
+# 暴露端口
+EXPOSE 5900 6080  # VNC 端口
+EXPOSE 8501       # Streamlit UI 端口
+# EXPOSE 7860     # Gradio UI 端口（如果使用 gradio）
 
 # 安装 gosu 用于更好的用户切换
 USER root
@@ -246,4 +248,6 @@ RUN echo '#!/bin/bash' > /entrypoint.sh && \
     chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["browser-use"]
+
+# 默认启动 Streamlit Web UI
+CMD ["python", "-m", "streamlit", "run", "/app/examples/ui/streamlit_demo.py", "--server.port=8501", "--server.address=0.0.0.0"]
