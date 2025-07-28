@@ -244,7 +244,7 @@ RUN echo '#!/bin/bash' > /entrypoint.sh && \
     echo '    export BROWSER_USE_HEADLESS=false' >> /entrypoint.sh && \
     echo '    echo "VNC services started. Access via http://localhost:6080/vnc.html"' >> /entrypoint.sh && \
     echo 'fi' >> /entrypoint.sh && \
-    echo 'exec gosu browseruse $@' >> /entrypoint.sh && \
+    echo 'exec gosu browseruse "$@"' >> /entrypoint.sh && \
     chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
@@ -254,5 +254,9 @@ RUN --mount=type=cache,target=/root/.cache,sharing=locked,id=cache-$TARGETARCH \
     --mount=from=ghcr.io/astral-sh/uv:latest,source=/uv,target=/bin/uv \
     uv pip install streamlit
 
+# 设置 Streamlit 配置以跳过 email 收集
+ENV STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+ENV STREAMLIT_THEME_BASE="dark"
+
 # 默认启动 Streamlit Web UI
-CMD ["python", "-m", "streamlit", "run", "/app/examples/ui/streamlit_demo.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["python", "-m", "streamlit", "run", "/app/examples/ui/streamlit_demo.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.headless=true"]
