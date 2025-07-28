@@ -227,19 +227,23 @@ EXPOSE 9222
 # 暴露 VNC 端口
 EXPOSE 5900 6080
 
+# 安装 gosu 用于更好的用户切换
+USER root
+RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
+
 # 创建启动脚本
-RUN echo '#!/bin/bash\n\
-if [ "${ENABLE_VNC}" = "true" ]; then\n\
-    Xvfb :1 -screen 0 1280x1024x24 &\n\
-    x11vnc -display :1 -forever -nopw -rfbport 5900 &\n\
-    websockify --web=/usr/share/novnc/ 6080 localhost:5900 &\n\
-    sleep 3\n\
-    export DISPLAY=:1\n\
-    export BROWSER_USE_HEADLESS=false\n\
-fi\n\
-exec "$@"' > /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
+RUN echo '#!/bin/bash' > /entrypoint.sh && \
+    echo 'if [ "${ENABLE_VNC}" = "true" ]; then' >> /entrypoint.sh && \
+    echo '    Xvfb :1 -screen 0 1280x1024x24 &' >> /entrypoint.sh && \
+    echo '    x11vnc -display :1 -forever -nopw -rfbport 5900 &' >> /entrypoint.sh && \
+    echo '    websockify --web=/usr/share/novnc/ 6080 localhost:5900 &' >> /entrypoint.sh && \
+    echo '    sleep 3' >> /entrypoint.sh && \
+    echo '    export DISPLAY=:1' >> /entrypoint.sh && \
+    echo '    export BROWSER_USE_HEADLESS=false' >> /entrypoint.sh && \
+    echo '    echo "VNC services started. Access via http://localhost:6080/vnc.html"' >> /entrypoint.sh && \
+    echo 'fi' >> /entrypoint.sh && \
+    echo 'exec gosu browseruse $@' >> /entrypoint.sh && \
+    chmod +x /entrypoint.sh
 
-# 保持 root 用户以便启动 VNC 服务
-# USER "$BROWSERUSE_USER"
-
-ENTRYPOINT ["/docker-entrypoint.sh", "browser-use"]
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["browser-use"]
